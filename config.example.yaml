@@ -1,0 +1,33 @@
+# systemone-qwen model registry. Mount it and point SYSTEMONE_CONFIG at it.
+# Every key under `models` is a name clients can send in the request's `model` field.
+
+provider: systemone-qwen          # reported in each response's `provider`
+default_model: qwen-decision      # used when a request names no model
+allow_unknown_model: false        # true: unknown names fall back to default_model instead of 404
+
+aliases:
+  jev-latest: qwen-decision       # lets Jev clients switch by changing only the base URL
+
+models:
+  qwen-decision:
+    # llama-server root URL. Direct access (not through a proxy) enables /tokenize, which is
+    # needed for questions with more than 26 options.
+    base_url: http://qwen-decision-llm-server.ai-stack.svc.cluster.local:8080
+    # served_model: qwen-decision    # only needed when a proxy (LiteLLM) routes on `model`
+    # api_key_env: LITELLM_API_KEY   # environment variable holding the backend key, if any
+    noul_labels: prefixed            # plain | criteria | prefixed (see docs/configuration.md)
+    debias: false                    # only helps sub-1B models; doubles noul cost
+    calibration_temperature: 1.5     # fitted on JevBench for Qwen3.5-9B; 1.0 disables
+    think_tokens: 0                  # 0 = answer immediately
+    top_logprobs: 100
+    concurrency: 1                   # match llama-server --parallel
+    timeout_s: 120
+    extra_body:
+      cache_prompt: true             # llama-server reuses the shared state prefix across questions
+
+  # Same server, reasoning first: about Jev's accuracy on JevBench, ~60x slower (~20 s per decision).
+  qwen-decision-think:
+    base_url: http://qwen-decision-llm-server.ai-stack.svc.cluster.local:8080
+    think_tokens: 512
+    calibration_temperature: 1.75
+    timeout_s: 300
