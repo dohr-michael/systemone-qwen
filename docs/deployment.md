@@ -26,6 +26,9 @@ llama-server --model /models/Qwen3.5-9B-Q8_0.gguf --host 0.0.0.0 --port 8080 \
   The context is split across slots.
 - `--cache-type-k/v f16`: the context is small, and a quantized KV cache can shift logits.
 - `--ctx-size 16384`: JevBench's longest prompts fit; decisions need far less than chat.
+- No speculative decoding (`--spec-type`, `--spec-draft-model`): llama-server then reports
+  placeholder logprobs (0.0, empty `top_logprobs`) for accepted tokens
+  ([llama.cpp#27972](https://github.com/ggml-org/llama.cpp/issues/27972), open as of b11430).
 - No `--mmproj`, no `--embeddings`, no chat template flags: the service sends a raw prompt
   with thinking already closed.
 

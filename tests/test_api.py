@@ -194,6 +194,20 @@ def test_more_than_26_options_without_tokenize_is_a_clear_422():
     assert response.status_code == 422 and "/tokenize" in response.json()["error"]["message"]
 
 
+def test_box_questions_and_images_are_a_clear_422_before_any_backend_call():
+    image = {"type": "image_url", "image_url": {"url": "data:image/png;base64,iVBORw0KGgo="}}
+    fake = FakeLlamaServer()
+    with client_for(fake) as client:
+        box = ask(client, {"cat": {"type": "box", "instructions": "Where is the cat?"}}, model="jev-latest")
+        assert box.status_code == 422 and "box" in box.json()["error"]["message"]
+        in_state = client.post("/v1/systemone", json={"state": [{"type": "text", "text": "Look"}, image],
+                                                      "questions": {"r": NOUL}})
+        assert in_state.status_code == 422 and "image" in in_state.json()["error"]["message"]
+        in_criteria = {"type": "choice", "instructions": "Which one?", "criteria": {"a": [image], "b": "text"}}
+        assert ask(client, {"r": in_criteria}).status_code == 422
+    assert fake.requests == []
+
+
 def test_aliases_paths_and_models_listing():
     with client_for(FakeLlamaServer()) as client:
         for path in ("/api/v1/systemone", "/v1/systemone", "/api/alpha/decisions"):

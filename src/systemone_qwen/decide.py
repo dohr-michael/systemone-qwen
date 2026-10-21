@@ -15,11 +15,29 @@ from typing import Any
 from .backend import Alternative, Backend, BackendError, Usage
 from .config import ModelConfig, Settings
 from .prompt import chatml, codes, options, render, user_message
-from .schema import DecisionRequest, NoulQuestion, Question, ScoreQuestion
+from .schema import BoxQuestion, DecisionRequest, NoulQuestion, Question, ScoreQuestion
 
 
 class UnsupportedRequest(ValueError):
     """Valid request this backend cannot answer faithfully (HTTP 422)."""
+
+
+def has_image(value: Any) -> bool:
+    """True if `value` holds an image part ({"type": "image_url", ...}) at any depth."""
+    if isinstance(value, dict):
+        return value.get("type") == "image_url" or any(has_image(v) for v in value.values())
+    if isinstance(value, list):
+        return any(has_image(v) for v in value)
+    return False
+
+
+def check_supported(request: DecisionRequest) -> None:
+    """Refuse what a text-only model would otherwise answer from garbage (an image's URL or base64)."""
+    for key, question in request.questions.items():
+        if isinstance(question, BoxQuestion):
+            raise UnsupportedRequest(f"question {key!r}: box questions need image input, which this text-only model lacks")
+    if has_image(request.state) or any(has_image(q.model_dump()) for q in request.questions.values()):
+        raise UnsupportedRequest("image input is not supported by this text-only model")
 
 
 def softmax(scores: list[float]) -> list[float]:
@@ -134,6 +152,7 @@ async def answer(backend: Backend, config: ModelConfig, state: Any, question: Qu
 
 
 async def decide(settings: Settings, backends: dict[str, Backend], request: DecisionRequest) -> dict:
+    check_supported(request)
     name, config = settings.resolve(request.model)
     backend = backends[name]
     usage = Usage()

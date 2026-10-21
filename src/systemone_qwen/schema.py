@@ -35,7 +35,13 @@ class ScoreQuestion(BaseModel):
     criteria: list[Content] = Field(min_length=2, max_length=10)
 
 
-Question = Annotated[NoulQuestion | ChoiceQuestion | ScoreQuestion, Field(discriminator="type")]
+class BoxQuestion(BaseModel):
+    # Jev 1.14: locate one target in an image. Parsed only to be refused with a clear 422.
+    type: Literal["box"]
+    instructions: Content
+
+
+Question = Annotated[NoulQuestion | ChoiceQuestion | ScoreQuestion | BoxQuestion, Field(discriminator="type")]
 
 
 class DecisionRequest(BaseModel):
