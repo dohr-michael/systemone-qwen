@@ -27,6 +27,10 @@ Jev scores about 200/231 on the official leaderboard; 198/231 here.
 reproduces the lab adapter it was ported from exactly: 0.827 overall, identical on every tier
 and question type, Brier 0.268, ECE 0.062, p50 0.35 s.
 
+The Go service that replaced it sends byte-identical prompts and backend requests and returns
+the same answers on the recorded parity cases (`internal/systemone/testdata/parity.json`, see
+[ADR 0001](adr/0001-go-port.md)); a JevBench run against the real llama-server is still to be done.
+
 ## Qwen3.5-9B settings
 
 | Variant | All | Hard | Brier | ECE | p50 latency |

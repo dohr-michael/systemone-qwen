@@ -1,23 +1,22 @@
-# systemone-qwen: pure-Python HTTP service, no GPU stack. The GPU lives in llama-server.
-# One image for linux/amd64 and linux/arm64.
-ARG PYTHON_IMAGE=python:3.12-slim
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:latest
+# systemone-qwen: one static Go binary on an empty image. The GPU lives in llama-server.
+# The build stage runs natively and cross-compiles: linux/amd64 and linux/arm64 need no emulation.
+ARG GO_IMAGE=golang:1.27.3
 
-FROM ${UV_IMAGE} AS uv
+FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS build
+ARG TARGETOS TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w" -o /out/systemone-qwen ./cmd/systemone-qwen
 
-FROM ${PYTHON_IMAGE} AS build
-COPY --from=uv /uv /bin/uv
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
-WORKDIR /app
-COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project
-COPY src ./src
-RUN uv sync --frozen --no-dev --no-editable
-
-FROM ${PYTHON_IMAGE}
-RUN useradd --system --uid 10001 --no-create-home systemone
-COPY --from=build /app/.venv /app/.venv
-ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 SYSTEMONE_HOST=0.0.0.0 SYSTEMONE_PORT=8000
-USER 10001
+FROM scratch
+# Root certificates, for an HTTPS backend (LiteLLM behind TLS).
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /out/systemone-qwen /systemone-qwen
+ENV SYSTEMONE_HOST=0.0.0.0 SYSTEMONE_PORT=8000
+USER 10001:10001
 EXPOSE 8000
-ENTRYPOINT ["systemone-qwen"]
+ENTRYPOINT ["/systemone-qwen"]

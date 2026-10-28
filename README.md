@@ -18,7 +18,9 @@ This is an independent project, not affiliated with TypeSafe or OpenRouter.
 
 - A llama-server serving a Qwen GGUF (Qwen3.5/3.6/3.8 ChatML with `<think>`), reachable over HTTP.
 - Nothing else: **no GPU, CUDA or ROCm in this image**. The GPU stack lives in llama-server.
-  The image is plain Python on Debian slim, for `linux/amd64` and `linux/arm64`.
+  The image is one static Go binary on an empty (`scratch`) base, about 8 MB, for
+  `linux/amd64` and `linux/arm64`. Its only dependency outside Go's standard library is a YAML
+  parser for the model registry.
 
 ## Quick start
 
@@ -54,13 +56,13 @@ curl -s localhost:8000/api/v1/systemone -H 'Content-Type: application/json' -d '
 - [Configuration](docs/configuration.md): environment, the YAML model registry, why each default.
 - [Deployment](docs/deployment.md): llama-server flags, Kubernetes with pod affinity, LiteLLM pass-through.
 - [Benchmarks](docs/benchmarks.md): JevBench results, settings, calibration, French.
+- [ADR 0001](docs/adr/0001-go-port.md): why the service moved from Python to Go, and how parity is kept.
 
 ## Development
 
 ```sh
-uv sync
-uv run pytest            # fake llama-server, no model needed
-SYSTEMONE_BACKEND_URL=http://localhost:8080 uv run systemone-qwen
+go test -race ./...      # fake llama-server, no model needed
+SYSTEMONE_BACKEND_URL=http://localhost:8080 go run ./cmd/systemone-qwen
 scripts/build.sh         # local image: localhost/systemone-qwen:dev
 benchmark/jevbench.sh local http://127.0.0.1:8000 qwen-decision
 ```

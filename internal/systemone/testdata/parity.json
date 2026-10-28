@@ -1,0 +1,544 @@
+[
+ {
+  "name": "noul_prefixed",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"refund\": {\"type\": \"noul\", \"instructions\": \"Does the customer ask for a refund?\", \"criteria\": {\"true\": \"Asks for money back\", \"false\": \"Does not\"}}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "refund": {
+     "type": "noul",
+     "noul": 0.9790676451593348
+    }
+   },
+   "usage": {
+    "input_tokens": 40,
+    "output_tokens": 1,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Does the customer ask for a refund?\n\nOptions:\nA. Yes: Asks for money back\nB. No: Does not<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ]
+  ]
+ },
+ {
+  "name": "noul_plain_rich_state",
+  "config": {
+   "noul_labels": "plain"
+  },
+  "backend_status": 200,
+  "request": "{\"model\":\"jev-latest\",\"state\":{\"z\":1,\"a\":{\"y\":[1e2,1.50,-0,1e-5,1E16,1e15,12345678901234567890,true,null,\"tab\\there \\\"q\\\" \\\\ \\u0001 \\u007f é é 🎉   <b>&amp; \\/\"],\"x\":{},\"w\":[]},\"dup\":1,\"m\":[{\"role\":\"user\",\"content\":\"hi\"},{\"role\":\"assistant\",\"content\":\"yo\"}],\"dup\":2},\"questions\":{\"refund\": {\"type\": \"noul\", \"instructions\": \"Remboursement demandé ?\"}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "refund": {
+     "type": "noul",
+     "noul": 0.9990899617725483
+    }
+   },
+   "usage": {
+    "input_tokens": 40,
+    "output_tokens": 1,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: {\"z\":1,\"a\":{\"y\":[100.0,1.5,0,1e-05,1e+16,1000000000000000.0,12345678901234567890,true,null,\"tab\\there \\\"q\\\" \\\\ \\u0001  é é 🎉   <b>&amp; /\"],\"x\":{},\"w\":[]},\"dup\":2,\"m\":[{\"role\":\"user\",\"content\":\"hi\"},{\"role\":\"assistant\",\"content\":\"yo\"}]}\n\nQuestion: Remboursement demandé ?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ]
+  ]
+ },
+ {
+  "name": "choice_and_score_calibrated",
+  "config": {
+   "calibration_temperature": 1.5
+  },
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"department\": {\"type\": \"choice\", \"instructions\": {\"task\": \"route\", \"lang\": \"fr\"}, \"criteria\": {\"technical\": \"Bugs\", \"billing\": null, \"other\": \"\", \"sales\": {\"examples\": [\"quote\", \"upgrade\"]}}}, \"anger\": {\"type\": \"score\", \"instructions\": \"How angry?\", \"criteria\": [\"Calm\", {\"level\": \"angry\", \"signs\": [\"caps\"]}, [\"very\", \"angry\"]]}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "technical",
+     "probabilities": {
+      "technical": 0.5664565839023973,
+      "billing": 0.3917024313057146,
+      "other": 4.337526517762488e-06,
+      "sales": 0.04183664726537037
+     },
+     "confidence": 0.421942111869863
+    },
+    "anger": {
+     "type": "score",
+     "score": 1.115823471304844,
+     "legend": {
+      "0": "Calm",
+      "1": "{\"level\":\"angry\",\"signs\":[\"caps\"]}",
+      "2": "[\"very\",\"angry\"]"
+     },
+     "probabilities": {
+      "0": 0.026347500939807762,
+      "1": 0.8314815268155406,
+      "2": 0.14217097224465172
+     },
+     "confidence": 0.7472222902233108
+    }
+   },
+   "usage": {
+    "input_tokens": 80,
+    "output_tokens": 2,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: {\"task\":\"route\",\"lang\":\"fr\"}\n\nOptions:\nA. technical: Bugs\nB. billing\nC. other\nD. sales: {\"examples\":[\"quote\",\"upgrade\"]}<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: How angry?\n\nOptions:\nA. Calm\nB. {\"level\":\"angry\",\"signs\":[\"caps\"]}\nC. [\"very\",\"angry\"]<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ]
+  ]
+ },
+ {
+  "name": "debias_and_thinking",
+  "config": {
+   "debias": true,
+   "think_tokens": 512
+  },
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"refund\": {\"type\": \"noul\", \"instructions\": \"Does the customer ask for a refund?\", \"criteria\": {\"true\": \"Asks for money back\", \"false\": \"Does not\"}}, \"team\": {\"type\": \"choice\", \"instructions\": \"Which team?\", \"criteria\": {\"a\": \"A team\", \"b\": \"B team\"}}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "refund": {
+     "type": "noul",
+     "noul": 2.6357513875641437e-09
+    },
+    "team": {
+     "type": "choice",
+     "choice": "b",
+     "probabilities": {
+      "a": 0.02115579332537666,
+      "b": 0.9788442066746232
+     },
+     "confidence": 0.9576884133492465
+    }
+   },
+   "usage": {
+    "input_tokens": 270,
+    "output_tokens": 24,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Does the customer ask for a refund?\n\nOptions:\nA. Yes: Asks for money back\nB. No: Does not<|im_end|>\n<|im_start|>assistant\n<think>\n",
+     "max_tokens": 512,
+     "temperature": 0.6,
+     "top_p": 0.95,
+     "seed": 0,
+     "stop": [
+      "</think>"
+     ]
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Does the customer ask for a refund?\n\nOptions:\nA. Yes: Asks for money back\nB. No: Does not<|im_end|>\n<|im_start|>assistant\n<think>\nIt depends on the receipt.\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Does the customer ask for a refund?\n\nOptions:\nA. No: Does not\nB. Yes: Asks for money back<|im_end|>\n<|im_start|>assistant\n<think>\n",
+     "max_tokens": 512,
+     "temperature": 0.6,
+     "top_p": 0.95,
+     "seed": 0,
+     "stop": [
+      "</think>"
+     ]
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Does the customer ask for a refund?\n\nOptions:\nA. No: Does not\nB. Yes: Asks for money back<|im_end|>\n<|im_start|>assistant\n<think>\nIt depends on the receipt.\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Which team?\n\nOptions:\nA. a: A team\nB. b: B team<|im_end|>\n<|im_start|>assistant\n<think>\n",
+     "max_tokens": 512,
+     "temperature": 0.6,
+     "top_p": 0.95,
+     "seed": 0,
+     "stop": [
+      "</think>"
+     ]
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Which team?\n\nOptions:\nA. a: A team\nB. b: B team<|im_end|>\n<|im_start|>assistant\n<think>\nIt depends on the receipt.\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ]
+  ]
+ },
+ {
+  "name": "criteria_labels_custom_backend",
+  "config": {
+   "noul_labels": "criteria",
+   "served_model": "qwen-decision",
+   "system_prompt": "Pick one.",
+   "extra_body": {
+    "cache_prompt": false,
+    "n_keep": 0
+   }
+  },
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"refund\": {\"type\": \"noul\", \"instructions\": \"Refund?\", \"criteria\": {\"true\": {\"says\": \"refund\"}, \"false\": \"No refund\"}}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "refund": {
+     "type": "noul",
+     "noul": 0.9994164571470497
+    }
+   },
+   "usage": {
+    "input_tokens": 40,
+    "output_tokens": 1,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": false,
+     "n_keep": 0,
+     "prompt": "<|im_start|>system\nPick one.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Refund?\n\nOptions:\nA. {\"says\":\"refund\"}\nB. No refund<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100,
+     "model": "qwen-decision"
+    }
+   ]
+  ]
+ },
+ {
+  "name": "question_order",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"zeta\": {\"type\": \"noul\", \"instructions\": \"Is it zeta?\"}, \"alpha\": {\"type\": \"noul\", \"instructions\": \"Is it alpha?\"}, \"mid\": {\"type\": \"noul\", \"instructions\": \"Is it mid?\"}, \"beta\": {\"type\": \"noul\", \"instructions\": \"Is it beta?\"}, \"omega\": {\"type\": \"noul\", \"instructions\": \"Is it omega?\"}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "zeta": {
+     "type": "noul",
+     "noul": 0.5353481902073174
+    },
+    "alpha": {
+     "type": "noul",
+     "noul": 0.9651307524656968
+    },
+    "mid": {
+     "type": "noul",
+     "noul": 0.999999997486869
+    },
+    "beta": {
+     "type": "noul",
+     "noul": 0.1323331396480583
+    },
+    "omega": {
+     "type": "noul",
+     "noul": 0.7042738031409683
+    }
+   },
+   "usage": {
+    "input_tokens": 200,
+    "output_tokens": 5,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Is it zeta?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Is it alpha?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Is it mid?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Is it beta?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ],
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Is it omega?\n\nOptions:\nA. Yes\nB. No<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 100
+    }
+   ]
+  ]
+ },
+ {
+  "name": "choice_26_options",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"pick\": {\"type\": \"choice\", \"instructions\": \"Pick\", \"criteria\": {\"o0\": \"option 0\", \"o1\": \"option 1\", \"o2\": \"option 2\", \"o3\": \"option 3\", \"o4\": \"option 4\", \"o5\": \"option 5\", \"o6\": \"option 6\", \"o7\": \"option 7\", \"o8\": \"option 8\", \"o9\": \"option 9\", \"o10\": \"option 10\", \"o11\": \"option 11\", \"o12\": \"option 12\", \"o13\": \"option 13\", \"o14\": \"option 14\", \"o15\": \"option 15\", \"o16\": \"option 16\", \"o17\": \"option 17\", \"o18\": \"option 18\", \"o19\": \"option 19\", \"o20\": \"option 20\", \"o21\": \"option 21\", \"o22\": \"option 22\", \"o23\": \"option 23\", \"o24\": \"option 24\", \"o25\": \"option 25\"}}}}",
+  "status": 200,
+  "response": {
+   "model": "qwen-decision",
+   "provider": "systemone-qwen",
+   "answers": {
+    "pick": {
+     "type": "choice",
+     "choice": "o6",
+     "probabilities": {
+      "o0": 0.02030787938445166,
+      "o1": 0.0001718825597040247,
+      "o2": 0.03246147376315201,
+      "o3": 3.4897802345543667e-10,
+      "o4": 0.0005449244358571829,
+      "o5": 0.011570737591780256,
+      "o6": 0.3402093929811386,
+      "o7": 3.4897802345543667e-10,
+      "o8": 0.0004207191740086441,
+      "o9": 0.0015926605340575418,
+      "o10": 0.004034436662526311,
+      "o11": 3.4897802345543667e-10,
+      "o12": 0.0013496072231963334,
+      "o13": 0.003423888346367171,
+      "o14": 0.000666040946029896,
+      "o15": 0.00015523927349018454,
+      "o16": 0.0271428277020711,
+      "o17": 0.0005821900093933457,
+      "o18": 0.11698972806427455,
+      "o19": 0.22407048662842657,
+      "o20": 0.113932219456985,
+      "o21": 0.045650561958535035,
+      "o22": 0.054572131793447734,
+      "o23": 0.0001509697662166853,
+      "o24": 3.4897802345543667e-10,
+      "o25": 3.4897802345543667e-10
+     },
+     "confidence": 0.31381776870038414
+    }
+   },
+   "usage": {
+    "input_tokens": 40,
+    "output_tokens": 1,
+    "cost": 0
+   }
+  },
+  "calls": [
+   [
+    "/v1/completions",
+    {
+     "cache_prompt": true,
+     "prompt": "<|im_start|>system\nChoose one option. Answer only with its code.\n<|im_end|>\n<|im_start|>user\nState: \"I was charged twice.\"\n\nQuestion: Pick\n\nOptions:\nA. o0: option 0\nB. o1: option 1\nC. o2: option 2\nD. o3: option 3\nE. o4: option 4\nF. o5: option 5\nG. o6: option 6\nH. o7: option 7\nI. o8: option 8\nJ. o9: option 9\nK. o10: option 10\nL. o11: option 11\nM. o12: option 12\nN. o13: option 13\nO. o14: option 14\nP. o15: option 15\nQ. o16: option 16\nR. o17: option 17\nS. o18: option 18\nT. o19: option 19\nU. o20: option 20\nV. o21: option 21\nW. o22: option 22\nX. o23: option 23\nY. o24: option 24\nZ. o25: option 25<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+     "max_tokens": 1,
+     "temperature": 0,
+     "logprobs": 104
+    }
+   ]
+  ]
+ },
+ {
+  "name": "unknown_model",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"nope\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"noul\", \"instructions\": \"Does the customer ask for a refund?\", \"criteria\": {\"true\": \"Asks for money back\", \"false\": \"Does not\"}}}}",
+  "status": 404,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "score_one_level",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"score\", \"instructions\": \"?\", \"criteria\": [\"one\"]}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "box_question",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"box\", \"instructions\": \"Where?\"}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "image_in_state",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":[{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:,\"}}],\"questions\":{\"r\": {\"type\": \"noul\", \"instructions\": \"Does the customer ask for a refund?\", \"criteria\": {\"true\": \"Asks for money back\", \"false\": \"Does not\"}}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "missing_state",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"questions\":{\"r\":{\"type\":\"noul\",\"instructions\":\"?\"}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "no_questions",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "choice_one_option",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"choice\", \"instructions\": \"?\", \"criteria\": {\"a\": null}}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "numeric_instructions",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"noul\", \"instructions\": 5}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "unknown_type",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"rank\", \"instructions\": \"?\"}}}",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "invalid_json",
+  "config": {},
+  "backend_status": 200,
+  "request": "{\"state\": \"s\", \"questions\": ",
+  "status": 422,
+  "response": null,
+  "calls": []
+ },
+ {
+  "name": "backend_down",
+  "config": {},
+  "backend_status": 500,
+  "request": "{\"model\":\"qwen-decision\",\"state\":\"I was charged twice.\",\"questions\":{\"r\": {\"type\": \"noul\", \"instructions\": \"Does the customer ask for a refund?\", \"criteria\": {\"true\": \"Asks for money back\", \"false\": \"Does not\"}}}}",
+  "status": 502,
+  "response": null,
+  "calls": []
+ }
+]
