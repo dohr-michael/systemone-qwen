@@ -1,0 +1,14 @@
+services:
+  systemone-qwen:
+    image: ${SYSTEMONE_IMAGE:-ghcr.io/dohr-michael/systemone-qwen:latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SYSTEMONE_PORT:-8000}:8000"
+    environment:
+      # Single model straight from the environment...
+      SYSTEMONE_BACKEND_URL: ${SYSTEMONE_BACKEND_URL:-http://host.containers.internal:8080}
+      SYSTEMONE_MODEL: ${SYSTEMONE_MODEL:-qwen-decision}
+      # ...or a full registry: uncomment both lines below and the volume.
+      # SYSTEMONE_CONFIG: /config/config.yaml
+    # volumes:
+    #   - ./config.yaml:/config/config.yaml:ro
