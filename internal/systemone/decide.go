@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
 	"strings"
 	"sync"
 )
@@ -126,10 +127,18 @@ func codeLogprobs(ctx context.Context, backend *Backend, prompt string, letters 
 	for i, code := range letters {
 		if pieces[i], err = backend.tokenize(ctx, code); err != nil {
 			var failure *BackendError
-			if errors.As(err, &failure) {
+			if errors.As(err, &failure) && (failure.Status == http.StatusNotFound || failure.Status == http.StatusMethodNotAllowed) {
 				return nil, unsupportedf("more than 26 options needs llama-server /tokenize: %v", err)
 			}
-			return nil, err
+			return nil, err // a failing tokenizer is the backend's fault (502), not the request's
+		}
+		// Without pieces that spell the code, prefix requests would score the wrong text.
+		var spelled strings.Builder
+		for _, t := range pieces[i] {
+			spelled.WriteString(t.Piece)
+		}
+		if spelled.String() != code {
+			return nil, backendErrorf("/tokenize split %q into %d tokens spelling %q", code, len(pieces[i]), spelled.String())
 		}
 	}
 	if len(first.byID) == 0 {
@@ -269,9 +278,19 @@ func Decide(ctx context.Context, settings *Settings, backends map[string]*Backen
 	var usage Usage
 	answers := make(object, len(request.Questions))
 	errs := make([]error, len(request.Questions))
+	// Only as many questions in flight as backend slots: each prompt repeats the whole state,
+	// so 255 questions built at once would hold 255 copies of it.
+	workers := make(chan struct{}, backend.Config.Concurrency)
 	var wg sync.WaitGroup
 	for i, q := range request.Questions {
 		wg.Go(func() {
+			select {
+			case workers <- struct{}{}:
+				defer func() { <-workers }()
+			case <-ctx.Done():
+				errs[i] = ctx.Err()
+				return
+			}
 			a, err := answer(ctx, backend, request.State, q.Question, &usage)
 			if err != nil {
 				errs[i] = err

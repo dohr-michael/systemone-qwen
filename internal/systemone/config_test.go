@@ -28,6 +28,7 @@ func TestParseJSONKeepsPythonSemantics(t *testing.T) {
 	if got := v.PythonJSON(); got != `{"b":3,"a":2,"n":0,"big":12345678901234567890,"s":"<&>\u0007"}` {
 		t.Fatal(got)
 	}
+	// Deliberate departures: Python accepts NaN (not JSON) and nests up to its recursion limit.
 	for _, bad := range []string{`{"a":1} x`, `{"a":`, `NaN`, strings.Repeat("[", maxDepth+2) + strings.Repeat("]", maxDepth+2)} {
 		if _, err := ParseJSON([]byte(bad)); err == nil {
 			t.Errorf("%.20q: want an error", bad)

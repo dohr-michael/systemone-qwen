@@ -1,6 +1,7 @@
 package systemone
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -40,6 +41,8 @@ type NamedQuestion struct {
 
 // ParseRequest decodes and validates a request body with the limits TypeSafe documents.
 func ParseRequest(body []byte) (Request, error) {
+	// Python reads a UTF-8 BOM from bytes; NaN and Infinity, which it also accepts, are not JSON and stay refused.
+	body = bytes.TrimPrefix(body, []byte("\xef\xbb\xbf"))
 	root, err := ParseJSON(body)
 	if err != nil {
 		return Request{}, fmt.Errorf("invalid JSON: %w", err)

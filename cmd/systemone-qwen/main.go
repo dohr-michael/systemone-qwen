@@ -38,6 +38,9 @@ func run() error {
 		Addr:              address,
 		Handler:           systemone.NewHandler(settings, backends, logger),
 		ReadHeaderTimeout: 10 * time.Second,
+		// The whole request, body included; no write timeout: thinking can take minutes.
+		ReadTimeout: 60 * time.Second,
+		IdleTimeout: 120 * time.Second,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

@@ -23,12 +23,15 @@ import (
 // requested sampling temperature does not change them.
 
 // BackendError: the model server failed or answered something unusable (HTTP 502 to our caller).
-type BackendError struct{ msg string }
+type BackendError struct {
+	msg    string
+	Status int // the backend's HTTP status, 0 when it gave none
+}
 
 func (e *BackendError) Error() string { return e.msg }
 
 func backendErrorf(format string, args ...any) error {
-	return &BackendError{fmt.Sprintf(format, args...)}
+	return &BackendError{msg: fmt.Sprintf(format, args...)}
 }
 
 type alternative struct {
@@ -108,19 +111,28 @@ func NewBackend(cfg ModelConfig, transport http.RoundTripper) *Backend {
 	}
 }
 
+// request carries the backend key on every call, /health included (a proxy may guard it too).
+func (b *Backend) request(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequestWithContext(ctx, method, b.base+path, body)
+	if err == nil && b.apiKey != "" {
+		request.Header.Set("Authorization", "Bearer "+b.apiKey)
+	}
+	return request, err
+}
+
 func (b *Backend) post(ctx context.Context, path string, body, out any) error {
-	payload, err := json.Marshal(body)
-	if err != nil {
+	// No HTML escaping: a prompt full of "<" would otherwise grow up to six times.
+	var payload bytes.Buffer
+	encoder := json.NewEncoder(&payload)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(body); err != nil {
 		return err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, b.base+path, bytes.NewReader(payload))
+	request, err := b.request(ctx, http.MethodPost, path, &payload)
 	if err != nil {
 		return backendErrorf("%s: %v", path, err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	if b.apiKey != "" {
-		request.Header.Set("Authorization", "Bearer "+b.apiKey)
-	}
 	select {
 	case b.slots <- struct{}{}:
 	case <-ctx.Done():
@@ -141,7 +153,7 @@ func (b *Backend) post(ctx context.Context, path string, body, out any) error {
 		return backendErrorf("%s: %v", path, err)
 	}
 	if response.StatusCode != http.StatusOK {
-		return backendErrorf("%s returned %d: %.300s", path, response.StatusCode, data)
+		return &BackendError{fmt.Sprintf("%s returned %d: %.300s", path, response.StatusCode, data), response.StatusCode}
 	}
 	if err := json.Unmarshal(data, out); err != nil {
 		return backendErrorf("%s: unreadable answer: %v", path, err)
@@ -227,7 +239,7 @@ func (b *Backend) tokenize(ctx context.Context, text string) ([]token, error) {
 func (b *Backend) Healthy(ctx context.Context) bool {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, b.base+"/health", nil)
+	request, err := b.request(ctx, http.MethodGet, "/health", nil)
 	if err != nil {
 		return false
 	}

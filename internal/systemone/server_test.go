@@ -19,15 +19,19 @@ import (
 // which is padded with unrelated tokens to the requested size, as a real llama-server does,
 // unless `short` is set.
 type fakeLlama struct {
-	table   func(prompt string) map[string]float64
-	legacy  bool
-	short   bool
-	status  int
-	noIDs   bool
-	tokens  bool // serve /tokenize
-	mu      sync.Mutex
-	request []map[string]any
-	paths   []string
+	table  func(prompt string) map[string]float64
+	legacy bool
+	short  bool
+	status int
+	noIDs  bool
+	tokens bool // serve /tokenize
+	// /tokenize misbehaving: this status, or an empty token list.
+	tokenizeStatus int
+	emptyTokens    bool
+	auth           []string // Authorization header of every request
+	mu             sync.Mutex
+	request        []map[string]any
+	paths          []string
 }
 
 func newFake(table map[string]float64) *fakeLlama {
@@ -52,6 +56,7 @@ func (f *fakeLlama) handle(r *http.Request) (*http.Response, error) {
 	}
 	f.mu.Lock()
 	f.paths = append(f.paths, r.URL.Path)
+	f.auth = append(f.auth, r.Header.Get("Authorization"))
 	if r.URL.Path == "/v1/completions" {
 		f.request = append(f.request, body)
 	}
@@ -63,6 +68,10 @@ func (f *fakeLlama) handle(r *http.Request) (*http.Response, error) {
 		return reply(200, map[string]any{"status": "ok"})
 	case r.URL.Path == "/tokenize" && !f.tokens:
 		return reply(404, "not found")
+	case r.URL.Path == "/tokenize" && f.tokenizeStatus != 0:
+		return reply(f.tokenizeStatus, "tokenizer down")
+	case r.URL.Path == "/tokenize" && f.emptyTokens:
+		return reply(200, map[string]any{"tokens": []any{}})
 	case r.URL.Path == "/tokenize":
 		// One token per letter.
 		var tokens []any
@@ -398,5 +407,50 @@ func TestPromptIsByteIdenticalToTheBenchmarkedLabVersion(t *testing.T) {
 	}
 	if !strings.HasSuffix(chatML("s", "u", nil), "<think>\n") {
 		t.Fatal("thinking must stay open")
+	}
+}
+
+func thirtyOptions() map[string]any {
+	criteria := map[string]any{}
+	for i := range 30 {
+		criteria[strings.Repeat("o", i+1)] = nil
+	}
+	return map[string]any{"type": "choice", "instructions": "?", "criteria": criteria}
+}
+
+func TestATokenizerThatFailsOrSpellsNothingIsABackendError(t *testing.T) {
+	down := newFake(nil)
+	down.tokenizeStatus = 500
+	if status, body := serve(t, down, nil).ask(map[string]any{"q": thirtyOptions()}); status != 502 {
+		t.Fatal("a failing tokenizer is the backend's fault:", status, body)
+	}
+	empty := newFake(nil)
+	empty.emptyTokens = true
+	if status, body := serve(t, empty, nil).ask(map[string]any{"q": thirtyOptions()}); status != 502 {
+		t.Fatal("no pieces must not give a uniform answer:", status, body)
+	}
+}
+
+func TestEveryBackendRequestCarriesTheKeyHealthIncluded(t *testing.T) {
+	t.Setenv("LLAMA_KEY", "sk-test")
+	fake := newFake(nil)
+	c := serve(t, fake, func(m *ModelConfig) { m.APIKeyEnv = "LLAMA_KEY" })
+	c.ask(map[string]any{"r": noul})
+	c.do(http.MethodGet, "/ready", nil)
+	if len(fake.auth) != 2 || fake.auth[0] != "Bearer sk-test" || fake.auth[1] != "Bearer sk-test" {
+		t.Fatal(fake.paths, fake.auth)
+	}
+}
+
+func TestAUTF8ByteOrderMarkIsAccepted(t *testing.T) {
+	c := serve(t, newFake(nil), nil)
+	body := "\xef\xbb\xbf" + `{"state":"s","questions":{"r":{"type":"noul","instructions":"?"}}}`
+	response, err := http.Post(c.url+"/v1/systemone", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != 200 {
+		t.Fatal(response.StatusCode)
 	}
 }

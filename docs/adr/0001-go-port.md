@@ -43,7 +43,16 @@ Two fixes from the v0.1.0 review are included, outside the benchmarked path:
    the floor: a backend ignoring `logprobs` made every option equal, silently.
 
 Small contract changes: validation errors use the service's `{"error": ...}` body instead of
-FastAPI's `{"detail": [...]}`; bodies over 16 MB get a 413; nesting is capped at 512 levels.
+FastAPI's `{"detail": [...]}`; bodies over 16 MB get a 413; nesting is capped at 512 levels;
+`NaN` and `Infinity`, which Python's `json` accepts, are refused as the invalid JSON they are
+(a UTF-8 BOM is still accepted, UTF-16/32 bodies are not).
+
+A Codex review of the port found, among others, three issues the Python version already had,
+fixed here: every question built its prompt at once (255 copies of a large state in memory;
+now at most `concurrency` questions are in flight), an empty `/tokenize` answer gave a uniform
+distribution with a 200 (now a 502), and any tokenizer failure was blamed on the request with
+a 422 (now only a missing endpoint is; other failures are 502). It also added the backend key
+to `/health` probes and a 60 s read timeout on whole requests.
 
 ## Consequences
 
