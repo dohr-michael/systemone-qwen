@@ -9,7 +9,7 @@
 | `SYSTEMONE_SERVED_MODEL` | — | `model` forwarded to the backend (needed behind LiteLLM) |
 | `SYSTEMONE_API_KEY_ENV` | — | Name of the variable holding the backend API key |
 | `SYSTEMONE_HOST` / `SYSTEMONE_PORT` | `0.0.0.0` / `8000` | Listen address |
-| `SYSTEMONE_LOG_LEVEL` | `info` | uvicorn log level |
+| `SYSTEMONE_LOG_LEVEL` | `info` | `debug`, `info`, `warning` or `error`; one log line per request at `info` |
 
 ## Model registry
 
@@ -51,10 +51,16 @@ All numbers are JevBench public-set accuracy (231 tasks) for Qwen3.5-9B; see
 ## Options and the 26-letter limit
 
 Options are lettered A, B, C… and the answer is the first token's logprob for each letter.
-Up to 26 options this needs nothing beyond OpenAI-style `logprobs`. Beyond 26 the codes become
-AA, AB…, which the service scores token by token using llama-server's `/tokenize` and one extra
-request per shared prefix. Behind a proxy without `/tokenize` (LiteLLM), such questions fail
-with a 422 instead of returning a distorted distribution.
+Up to 26 options this needs nothing beyond OpenAI-style `logprobs`. Beyond 26 every option gets
+a two-letter code (AA, AB… for all of them, so no code is the prefix of another and none is
+favoured), which the service scores token by token using llama-server's `/tokenize` and one
+extra request per shared prefix. Behind a proxy without `/tokenize` (LiteLLM), such questions
+fail with a 422 instead of returning a distorted distribution.
 
 An option missing from the returned top-N gets the lowest returned logprob, an upper bound on
-its true value; raise `top_logprobs` if many options compete.
+its true value; raise `top_logprobs` if many options compete. If the backend returns fewer
+alternatives than requested and an option is missing, the request fails with a 502: a server
+that ignores `logprobs` would otherwise make every option equally likely.
+
+The registry file is YAML (JSON works too); keys the service does not know are ignored, as
+before, and `models` and `aliases` keep their file order (the first model is the default).

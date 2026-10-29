@@ -83,6 +83,6 @@ Probabilities are not rounded (Jev rounds to two decimals).
 | 404 | `model` is neither configured nor an alias (and `allow_unknown_model` is false) |
 | 422 | Invalid request, more than 26 options without llama-server `/tokenize` access, or Jev 1.14 image input (`image_url` parts, `box` questions): the model reads text only |
 | 502 | The llama-server failed or returned no usable logprobs |
+| 413 | Request body over 16 MB |
 
-Error bodies follow `{"error": {"message": "...", "code": 404}}`; FastAPI's own validation
-errors (422) use its `{"detail": [...]}` body.
+Every error body follows `{"error": {"message": "...", "code": 422}}`, validation errors included.

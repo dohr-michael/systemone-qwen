@@ -1,6 +1,5 @@
 .git
-.venv
 .env
-**/__pycache__
-.pytest_cache
-benchmark/results
+benchmark
+docs
+**/testdata
